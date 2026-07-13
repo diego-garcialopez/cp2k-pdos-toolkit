@@ -7,11 +7,7 @@ the same atomic kind and the same electronic-structure calculation),
 applies Gaussian broadening to turn the discrete eigenvalue/PDOS-weight
 pairs into a continuous curve, and writes/plots the result.
 
-This module merges and corrects two earlier prototypes (``pdos_plot_5.py``
-and ``pdos_plot_6_memory.py``). See ``CHANGELOG.md`` / ``docs/theory.md`` in
-this repository for a full account of what was wrong with those and why.
-
-In one sentence, the two bugs that mattered most were:
+This module merges and corrects two earlier prototypes.
 
 1. The broadening weight was multiplied by the energy-grid spacing ``de``
    and by the Hartree->eV factor in the wrong direction, which made the
@@ -19,9 +15,6 @@ In one sentence, the two bugs that mattered most were:
    (the plotting grid resolution) instead of being a physical quantity.
 2. A malformed hex color code (``'#3CCB974'``, 7 hex digits instead of 6)
    crashed the plotting routine as soon as a 5th unique element appeared.
-
-Both are fixed here, along with several smaller robustness issues
-documented in the README.
 """
 
 from __future__ import annotations
@@ -84,8 +77,8 @@ class PDOSProcessor:
     def __init__(self, args: argparse.Namespace):
         self.args = args
         self.metadata: Dict[str, object] = {
-            "elements": [],   # element symbol per PDOS data column
-            "orbitals": [],   # orbital letter per PDOS data column
+            "elements": [],  # element symbol per PDOS data column
+            "orbitals": [],  # orbital letter per PDOS data column
             "efermi_eV": None,
         }
         # One entry per input file: filename + column bookkeeping.
@@ -175,7 +168,9 @@ class PDOSProcessor:
                 mask = (eigen_eV < efermi_eV) & (occ > 0)
                 if np.any(mask):
                     chunk_max = eigen_eV[mask].max()
-                    best_vbm = chunk_max if best_vbm is None else max(best_vbm, chunk_max)
+                    best_vbm = (
+                        chunk_max if best_vbm is None else max(best_vbm, chunk_max)
+                    )
 
         if best_vbm is None:
             raise ValueError("No occupied states below the Fermi level were found")
@@ -191,8 +186,8 @@ class PDOSProcessor:
             (energy_grid_eV, pdos_matrix) where ``pdos_matrix`` has shape
             (n_grid_points, n_orbital_columns) and is in states/eV.
         """
-        sigma = self.args.sigma   # eV
-        de = self.args.de         # eV
+        sigma = self.args.sigma  # eV
+        de = self.args.de  # eV
         reference_eV = (
             self.metadata["efermi_eV"]
             if self.args.reference == "fermi"
@@ -275,19 +270,22 @@ class PDOSProcessor:
         try:
             import matplotlib.pyplot as plt
         except ImportError:
-            log.error("Plotting requires matplotlib. Install with: pip install matplotlib")
+            log.error(
+                "Plotting requires matplotlib. Install with: pip install matplotlib"
+            )
             return
 
         from collections import defaultdict
 
-        element_orbitals: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
+        element_orbitals: Dict[str, Dict[str, list]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         for i, (elem, orb) in enumerate(
             zip(self.metadata["elements"], self.metadata["orbitals"])
         ):
             element_orbitals[elem][orb].append(pdos[:, i])
 
-        # Valid, arbitrarily-extensible color cycle (fixes the malformed
-        # 7-digit hex code that crashed plotting once a 5th element appeared).
+        # Valid, arbitrarily-extensible color cycle
         n_elements = len(element_orbitals)
         cmap = plt.get_cmap("tab10" if n_elements <= 10 else "tab20")
         colors = [cmap(i % cmap.N) for i in range(n_elements)]
@@ -300,14 +298,23 @@ class PDOSProcessor:
             total = sum(orbital_sums.values())
 
             if self.args.plot_type in ("total", "both"):
-                ax.plot(energy, total, label=f"{element} Total", color=color, linewidth=1.3)
+                ax.plot(
+                    energy, total, label=f"{element} Total", color=color, linewidth=1.3
+                )
 
             if self.args.plot_type in ("orbital", "both"):
                 linestyles = ["--", "-.", ":", (0, (1, 1))]
-                for (orb, dos), ls in zip(orbital_sums.items(), itertools.cycle(linestyles)):
+                for (orb, dos), ls in zip(
+                    orbital_sums.items(), itertools.cycle(linestyles)
+                ):
                     ax.plot(
-                        energy, dos, linestyle=ls, color=color, linewidth=0.7,
-                        label=f"{element} {orb}", alpha=0.8,
+                        energy,
+                        dos,
+                        linestyle=ls,
+                        color=color,
+                        linewidth=0.7,
+                        label=f"{element} {orb}",
+                        alpha=0.8,
                     )
 
         if self.args.total_dos:
@@ -320,10 +327,8 @@ class PDOSProcessor:
 
         if self.args.xlim is not None:
             ax.set_xlim(self.args.xlim)
-        # y-limits are left to matplotlib's autoscale by default, since a
-        # hardcoded [-0.3, 14.3] range (as in the original scripts) silently
-        # clips or misrepresents any system whose PDOS doesn't happen to
-        # fall in that range. Use --ylim to override explicitly.
+        # y-limits are left to matplotlib's autoscale by default
+        # use --ylim to override explicitly
         if self.args.ylim is not None:
             ax.set_ylim(self.args.ylim)
 
@@ -350,19 +355,66 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "--plot-output dos.png --plot-type both"
         ),
     )
-    parser.add_argument("pdosfilenames", nargs="+", help="CP2K PDOS output files (e.g. *-k*.pdos)")
-    parser.add_argument("-o", "--output", default="pdos.dat", help="Output filename for processed data")
-    parser.add_argument("-s", "--sigma", type=float, default=0.1, help="Gaussian broadening width, in eV")
-    parser.add_argument("-d", "--de", type=float, default=0.01, help="Energy grid spacing, in eV")
-    parser.add_argument("--reference", choices=["fermi", "vbm"], default="fermi", help="Energy reference for alignment")
-    parser.add_argument("--total-dos", action="store_true", help="Include a summed Total_DOS column/curve")
-    parser.add_argument("--chunk-size", type=int, default=2000, help="Rows read per chunk (controls peak memory use)")
+    parser.add_argument(
+        "pdosfilenames", nargs="+", help="CP2K PDOS output files (e.g. *-k*.pdos)"
+    )
+    parser.add_argument(
+        "-o", "--output", default="pdos.dat", help="Output filename for processed data"
+    )
+    parser.add_argument(
+        "-s",
+        "--sigma",
+        type=float,
+        default=0.1,
+        help="Gaussian broadening width, in eV",
+    )
+    parser.add_argument(
+        "-d", "--de", type=float, default=0.01, help="Energy grid spacing, in eV"
+    )
+    parser.add_argument(
+        "--reference",
+        choices=["fermi", "vbm"],
+        default="fermi",
+        help="Energy reference for alignment",
+    )
+    parser.add_argument(
+        "--total-dos",
+        action="store_true",
+        help="Include a summed Total_DOS column/curve",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=2000,
+        help="Rows read per chunk (controls peak memory use)",
+    )
 
     parser.add_argument("--plot", action="store_true", help="Generate a PDOS plot")
-    parser.add_argument("--plot-output", default="pdos.png", help="Output filename for the plot")
-    parser.add_argument("--plot-type", choices=["total", "orbital", "both"], default="total", help="Visualization detail level")
-    parser.add_argument("--xlim", type=float, nargs=2, default=None, metavar=("XMIN", "XMAX"), help="Optional x-axis limits, in eV")
-    parser.add_argument("--ylim", type=float, nargs=2, default=None, metavar=("YMIN", "YMAX"), help="Optional y-axis limits, in states/eV")
+    parser.add_argument(
+        "--plot-output", default="pdos.png", help="Output filename for the plot"
+    )
+    parser.add_argument(
+        "--plot-type",
+        choices=["total", "orbital", "both"],
+        default="total",
+        help="Visualization detail level",
+    )
+    parser.add_argument(
+        "--xlim",
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("XMIN", "XMAX"),
+        help="Optional x-axis limits, in eV",
+    )
+    parser.add_argument(
+        "--ylim",
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("YMIN", "YMAX"),
+        help="Optional y-axis limits, in states/eV",
+    )
     return parser
 
 
