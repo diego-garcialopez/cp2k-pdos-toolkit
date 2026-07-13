@@ -1,0 +1,26 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Generated output (large CP2K PDOS input files, plots, processed data)
+*.pdos
+*.dat
+*.png
+!examples/**
+
+# Jupyter
+.ipynb_checkpoints/
