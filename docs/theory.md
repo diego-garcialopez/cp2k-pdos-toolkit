@@ -18,30 +18,29 @@ Gaussian (or Lorentzian) of width `sigma`, and sum them:
 DOS(E) = Σ_i  w_i · G(E - E_i, σ)
 ```
 
-where `w_i` is the orbital weight of MO *i*, `E_i` its eigenvalue, and `G`
+where `w_i` is the orbital weight of MO _i_, `E_i` its eigenvalue, and `G`
 a Gaussian normalized so that `∫ G(x, σ) dx = 1`.
 
 Two properties fall directly out of this definition, and both are useful as
 sanity checks on any implementation:
 
-- **`DOS(E)` is a density.** Its units are *states per unit energy*
+- **`DOS(E)` is a density.** Its units are _states per unit energy_
   (e.g. states/eV). It is **not** supposed to depend on how finely you
-  choose to *sample* `E` for plotting — only on `σ` and on the underlying
+  choose to _sample_ `E` for plotting — only on `σ` and on the underlying
   eigenvalues/weights.
 - **The sum rule.** `∫ DOS(E) dE = Σ_i w_i`, the total weight summed over
   all MOs. Numerically, `Σ_grid DOS(E_grid) · Δe ≈ Σ_i w_i`, and this
   approximation should converge to the same value as `Δe → 0`, not drift.
 
-## 2. The bug in the original scripts
+## 2. The bug in the original script
 
-Both `pdos_plot_5.py` and `pdos_plot_6_memory.py` computed the broadening
-weight as:
+Previous scripts computed the broadening weight as:
 
 ```python
 gaussian(energy_diff) * (self.args.de * 27.211384)
 ```
 
-i.e. they multiplied the Gaussian by the *output grid spacing* `de` and by
+i.e. they multiplied the Gaussian by the _output grid spacing_ `de` and by
 the Hartree→eV conversion factor `27.211384`. This is wrong on two counts:
 
 1. **`de` should never appear in the convolution weight at all.** `de` is
@@ -55,16 +54,16 @@ the Hartree→eV conversion factor `27.211384`. This is wrong on two counts:
    `de = 0.1, 0.01, 0.001 eV` respectively — i.e. it scaled linearly with
    `de` instead of staying at the physically-correct value of `1.0`.
 2. **The Hartree→eV factor was applied in the wrong direction.** Converting
-   a normalized density from "per Hartree" to "per eV" requires *dividing*
+   a normalized density from "per Hartree" to "per eV" requires _dividing_
    by 27.211386 (a Gaussian normalized in Hartree units is `27.211386`
    times taller, per unit eV, than the same distribution normalized
-   directly in eV) — the code *multiplied* by it instead.
+   directly in eV) — the code _multiplied_ by it instead.
 
 The practical consequence: the absolute PDOS magnitude reported and
 plotted by both scripts was off by a factor that depended on an arbitrary
 numerical choice (`de`), not on physics. The original code even documents
-the symptom without diagnosing the cause, in a comment: *"A too-fine grid
-(small de) can lead to underestimation"* — that sentence is describing the
+the symptom without diagnosing the cause, in a comment: _"A too-fine grid
+(small de) can lead to underestimation"_ — that sentence is describing the
 bug, not a real physical effect. On a genuinely correct implementation, DOS
 magnitude should be practically insensitive to `de` (with a tiny, expected
 discretization error that shrinks — not grows — as `de` gets smaller).
@@ -85,8 +84,8 @@ contribution = weights @ pdos_vals
 ```
 
 `de` is used only for two things, both legitimate: (a) choosing the
-spacing of the *output* energy grid, and (b) as the trapezoid/Riemann
-weight *if and when you want to integrate the final curve*
+spacing of the _output_ energy grid, and (b) as the trapezoid/Riemann
+weight _if and when you want to integrate the final curve_
 (`np.sum(dos) * de`) — never inside the per-eigenvalue weight itself.
 
 This was verified directly: with the fix, the same single-eigenvalue test
