@@ -48,7 +48,16 @@ cp2k-pdos-toolkit/
 │   └── theory.md                 <- Gaussian broadening math + full derivation of the unit bug
 └── examples/
     └── example_usage.md
+    └── pdos_1.png
 ```
+
+## Plotting examples
+
+A plot can be optionally generated or the result can either be stored. Find below a possible outcome 
+when using the `--plot` argument.
+
+![](examples/pdos_1.png)
+
 
 ---
 
