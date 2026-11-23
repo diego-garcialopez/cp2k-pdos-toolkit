@@ -6,7 +6,7 @@ tool, so the bar is mostly "does it stay correct and readable."
 ## Setting up a development environment
 
 ```bash
-git clone https://github.com/<diego-garcialopez>/cp2k-pdos-toolkit.git
+git clone https://github.com/diego-garcialopez/cp2k-pdos-toolkit.git
 cd cp2k-pdos-toolkit
 python3 -m venv .venv
 source .venv/bin/activate
