@@ -13,7 +13,7 @@ This repository consolidates and fixes two earlier prototype scripts. See
 ## Quick start
 
 ```bash
-git clone https://github.com/<your-username>/cp2k-pdos-toolkit.git
+git clone https://github.com/<diego-garcialopez>/cp2k-pdos-toolkit.git
 cd cp2k-pdos-toolkit
 pip install -e .
 
